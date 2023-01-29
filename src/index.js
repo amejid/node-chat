@@ -9,8 +9,12 @@ const io = socketio(server);
 
 app.use(express.static(path.join(__dirname, '../public')));
 
-io.on('connection', () => {
-  console.log('New websocket connection');
+io.on('connection', (socket) => {
+  socket.emit('message', 'Welcome');
+
+  socket.on('sendMessage', (msg) => {
+    io.emit('message', msg);
+  });
 });
 
 const port = process.env.PORT || 3000;
