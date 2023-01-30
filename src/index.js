@@ -12,8 +12,14 @@ const io = socketio(server);
 app.use(express.static(path.join(__dirname, '../public')));
 
 io.on('connection', (socket) => {
-  socket.emit('message', generateMessage('Welcome'));
-  socket.broadcast.emit('message', generateMessage('A new guy'));
+  socket.on('join', ({ username, room }) => {
+    socket.join(room);
+
+    socket.emit('message', generateMessage('Welcome'));
+    socket.broadcast
+      .to(room)
+      .emit('message', generateMessage(`${username} has joined`));
+  });
 
   socket.on('sendMessage', (msg, callback) => {
     const filter = new Filter();
@@ -22,12 +28,12 @@ io.on('connection', (socket) => {
       return callback(`Profanity is a no no`);
     }
 
-    io.emit('message', generateMessage(msg));
+    io.to('web').emit('message', generateMessage(msg));
     callback();
   });
 
   socket.on('sendLocation', ({ latitude, longitude }, callback) => {
-    io.emit(
+    io.to('web').emit(
       'locationMessage',
       generateLocationMsg(`https://google.com/maps?q=${latitude},${longitude}`)
     );
@@ -35,7 +41,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    io.emit('message', generateMessage('A guy left'));
+    io.to('web').emit('message', generateMessage('A guy left'));
   });
 });
 
