@@ -1,15 +1,36 @@
 const socket = io();
 
+const $messageForm = document.querySelector('#message-form');
+const $messageFormInput = $messageForm.querySelector('input');
+const $messageFormBtn = $messageForm.querySelector('button');
+const $sendLocationBtn = document.querySelector('#send-location');
+const $messages = document.querySelector('#messages');
+
+const messageTemplate = document.querySelector('#message-template').innerHTML;
+const urlTemplate = document.querySelector('#url-template').innerHTML;
+
 socket.on('message', (message) => {
-  console.log(message);
+  // console.log(message);
+  const html = Mustache.render(messageTemplate, { message });
+  $messages.insertAdjacentHTML('beforeend', html);
 });
 
-document.querySelector('#message-form').addEventListener('submit', (event) => {
+socket.on('locationMessage', (url) => {
+  // console.log(url);
+  const html = Mustache.render(urlTemplate, { url });
+  $messages.insertAdjacentHTML('beforeend', html);
+});
+
+$messageForm.addEventListener('submit', (event) => {
   event.preventDefault();
 
-  const { message } = event.target.elements;
+  $messageFormBtn.setAttribute('disabled', 'disabled');
 
-  socket.emit('sendMessage', message.value, (error) => {
+  socket.emit('sendMessage', $messageFormInput.value, (error) => {
+    $messageFormBtn.removeAttribute('disabled');
+    $messageFormInput.value = '';
+    $messageFormInput.focus();
+
     if (error) {
       return console.log(error);
     }
@@ -18,10 +39,11 @@ document.querySelector('#message-form').addEventListener('submit', (event) => {
   });
 });
 
-document.querySelector('#send-location').addEventListener('click', (event) => {
+$sendLocationBtn.addEventListener('click', (event) => {
   if (!navigator.geolocation) {
     return alert('Geolocation not supported');
   }
+  $sendLocationBtn.setAttribute('disabled', 'disabled');
 
   navigator.geolocation.getCurrentPosition((position) => {
     socket.emit(
@@ -30,7 +52,10 @@ document.querySelector('#send-location').addEventListener('click', (event) => {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       },
-      () => console.log('Location shared')
+      () => {
+        $sendLocationBtn.removeAttribute('disabled');
+        console.log('Location shared');
+      }
     );
   });
 });
